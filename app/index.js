@@ -5,6 +5,7 @@ import {
 } from 'dotenv';
 import mongoose from 'mongoose';
 import setupRouting from "./routes/index";
+import "./uploads/upload";
 
 
 config();
