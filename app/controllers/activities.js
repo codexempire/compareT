@@ -89,3 +89,15 @@ export const compareAssignments = async (req, res, next) => {
         }, 500)
     }
 }
+
+export const getPreviousChecks = async (req, res, next) => {
+    try {
+        
+        const previousChecks = await AssignmentComparisons.find({ staff: req.userId }).populate("assignment1 assignment2 staff")
+
+        return successResponse(res, { data: previousChecks }, 200);
+    } catch (error) {
+        console.log("getPreviousChecks >>> ", error)
+        return errorResponse(res, { error: "Server Error" }, 500)
+    }
+}
