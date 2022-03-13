@@ -8,6 +8,14 @@ const schema = Schema({
     publicId: {
         type: String,
         required: true,
+    },
+    path: {
+        type: String,
+        required: true,
+    },
+    studentName: {
+        type: String,
+        required: true,
     }
 }, {
     timestamps: true,

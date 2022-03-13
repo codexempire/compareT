@@ -8,6 +8,8 @@ import * as cloudinary from "../cloudinary";
 import fs from "fs";
 import path from "path";
 import stringSimilarity from "string-similarity";
+import cloudinarySDK from "cloudinary";
+import request from "request";
 
 export const uploadStudentAssignment = async (req, res) => {
     try {
@@ -28,9 +30,11 @@ export const uploadStudentAssignment = async (req, res) => {
             } = file;
 
             const newPath = await uploader(path)
-            urls.push(newPath);
-            fs.unlinkSync(path);
+            urls.push({...newPath, path});
         }
+
+        urls[0].studentName = req.body.firstStudentName;
+        urls[1].studentName = req.body.secondStudentName;
 
         const fileIds = [];
 
@@ -66,8 +70,18 @@ export const compareAssignments = async (req, res, next) => {
     try {
         
         const files = req.files;
+        const { firstStudentName, secondStudentName } = req.body;
 
-        console.log("files >>> ", files)
+        console.log("body >>> ", req.body, req.files)
+
+        if (!firstStudentName || !firstStudentName.trim().length) {
+            return errorResponse(res, { error: "Provide the name of the first student" }, 400)
+        }
+
+        if (!secondStudentName || !secondStudentName.trim().length) {
+            return errorResponse(res, { error: "Provide the name of the first student" }, 400)
+        }
+
         if (!files || files?.length !== 2) {
             return errorResponse(res, {
                 error: "Upload the 2 files to be compared"
@@ -98,6 +112,47 @@ export const getPreviousChecks = async (req, res, next) => {
         return successResponse(res, { data: previousChecks }, 200);
     } catch (error) {
         console.log("getPreviousChecks >>> ", error)
+        return errorResponse(res, { error: "Server Error" }, 500)
+    }
+}
+
+export const getSingleCheck = async (req, res, next) => {
+    try {
+        
+        const previousCheck = await AssignmentComparisons.findOne({ _id: req.params.id }).populate("assignment1 assignment2 staff")
+
+        if (!previousCheck) {
+            return errorResponse(res, { error: "Failed to find previous check" }, 404);
+        }
+
+        return successResponse(res, { data: previousCheck }, 200);
+    } catch (error) {
+        console.log("getPreviousChecks >>> ", error)
+        return errorResponse(res, { error: "Server Error" }, 500)
+    }
+}
+
+export const rerun = async (req, res) => {
+    try {
+        
+        const previousCheck = await AssignmentComparisons.findOne({ _id: req.params.id }).populate("assignment1 assignment2 staff")
+
+        if (!previousCheck) {
+            return errorResponse(res, { error: "Failed to find previous check" }, 404);
+        }
+
+        const firstAssignment = fs.readFileSync(path.resolve(previousCheck.assignment1.path), "utf-8");
+        const secondAssignment = fs.readFileSync(path.resolve(previousCheck.assignment2.path), "utf-8");
+
+        const comparison = stringSimilarity.compareTwoStrings(firstAssignment, secondAssignment);
+
+        previousCheck.comparisonPercentage = Number((comparison * 100).toFixed(2));
+        await previousCheck.save();
+
+        return successResponse(res, { data: previousCheck }, 200);
+        
+    } catch (error) {
+        console.log("rerun >>> ", error)
         return errorResponse(res, { error: "Server Error" }, 500)
     }
 }
