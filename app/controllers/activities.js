@@ -29,7 +29,6 @@ export const uploadStudentAssignment = async (req, res) => {
 
             const newPath = await uploader(path)
             urls.push(newPath);
-            console.log("New Path >>> ", newPath);
             fs.unlinkSync(path);
         }
 
@@ -68,7 +67,8 @@ export const compareAssignments = async (req, res, next) => {
         
         const files = req.files;
 
-        if (files.length !== 2) {
+        console.log("files >>> ", files)
+        if (!files || files?.length !== 2) {
             return errorResponse(res, {
                 error: "Upload the 2 files to be compared"
             }, 400);

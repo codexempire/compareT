@@ -69,21 +69,16 @@ export const loginUser = async (req, res) => {
 
         const user = await Users.findOne({ email: email.toLowerCase() });
 
-        console.log("User >>> ", user);
-
         if (!user) {
             return errorResponse(res, { error: "Invalid User Credentials" }, 404);
         }
 
         const matchingPasswords = await bcrypt.compare(password, user.password);
-        console.log("Pasword >>> ", matchingPasswords)
 
 
         if (!matchingPasswords) {
             return errorResponse(res, { error: "Invalid User Credentials" }, 409);
         }
-
-        console.log("here")
 
         // sign token
         const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET_KEY, { expiresIn: 24 * 60 * 60 });
